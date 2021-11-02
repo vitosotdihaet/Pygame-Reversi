@@ -71,12 +71,12 @@ class Board:
         board[3][4], board[4][3] = 2, 2
         return Board(board, True)
 
-    def print(self, txt='end'):
+    def print(self, text='end'):
         for row in range(8):
             for col in range(8):
                 print(self.grid[row][col], end="|")
             print()
-        print(txt)
+        print(text)
 
     def draw(self):
         for y, x in product(range(8), repeat=2):
@@ -184,24 +184,25 @@ class Board:
         ogrid = self.grid
         ngrid = [[0 for _ in range(9)] for _ in range(9)]
         good_turns = []
+        best_step_ind = 0
         steps = self.moves()
 
         for i in range(len(steps[0])):
             for r, c in product(range(8), repeat=2):
                 ngrid[r][c] = ogrid[r][c]
             tboard = Board(ngrid, player)
-            xbest, ybest = 0, 0
-            maxis = [0, 0]
+            xbest, ybest = -1, -1
+            maxis = [-1, -1]
 
-            if wht_score + blk_score < 24:
+            if wht_score + blk_score < 32:
                 for x, y in tboard.moves()[0]:
                     for xc, yc in tboard.cell_can_eat(x, y):
-                        if abs(3.5 - xc) >= maxis[0] or abs(3.5 - yc) >= maxis[1]:
+                        if abs(3.5 - xc) > maxis[0] or abs(3.5 - yc) > maxis[1]:
                             xbest = steps[0][i][0]
                             ybest = steps[0][i][1]
                             maxis = [abs(3.5 - xc), abs(3.5 - yc)]
 
-            elif 24 <= wht_score + blk_score < 56:
+            elif 32 <= wht_score + blk_score < 56:
                 for x, y in tboard.moves()[0]:
                     if len(tboard.cell_can_eat(x, y)) > len(tboard.cell_can_eat(xbest, ybest)):
                         xbest = steps[0][i][0]
@@ -218,7 +219,7 @@ class Board:
 
         # print(good_turns)
         best_step = 0
-        if good_turns == 0 or good_turns == [(0, 0) for _ in range(len(good_turns))]:
+        if good_turns == [] or good_turns == [(0, 0) for _ in range(len(good_turns))]:
             return tboard.choose_tog_turn(types_of_game[0])
 
         for i, coords in enumerate(good_turns):
@@ -226,6 +227,21 @@ class Board:
             if best_step < len(t):
                 best_step_ind = i
                 best_step = len(t)
+
+        for i, coords in enumerate(good_turns):
+            if coords in [(0, 0), (0, 7), (7, 0), (7, 7)]:
+                return coords
+            if coords in [(1, 1), (1, 6), (6, 1), (6, 6)]:
+                best_step_ind += 1
+            if coords in [(0, 1), (1, 0), (0, 6), (6, 0),
+                        (1, 7), (7, 1), (6, 7), (7, 6)]:
+                t = tboard.cell_can_eat(good_turns[i][0], good_turns[i][1])
+                if best_step_ind == i and best_step * RISK_FACTOR < len(t):
+                    best_step_ind += 1
+                    best_step = len(t)
+
+        if best_step_ind > len(good_turns) - 1:
+            best_step_ind = 0
 
         return (good_turns[best_step_ind])
 
@@ -324,8 +340,8 @@ def draw_main_buttons():
     PVP_BUTTON.draw((20, 20, 20))
     PVC_BUTTON.draw((20, 20, 20))
     CVC_BUTTON.draw((20, 20, 20))
-    BOT1_BEH.draw((20, 20, 20))
-    BOT2_BEH.draw((20, 20, 20))
+    BOT1_BUTTON.draw((20, 20, 20))
+    BOT2_BUTTON.draw((20, 20, 20))
 
     RGC_BUTTON.draw((20, 20, 20))
     DELAY_BUTTON.draw((20, 20, 20))
@@ -456,8 +472,8 @@ PVC_BUTTON = Button((255, 211, 0), 100, 325, 600, 100, "PVC")
 CVC_BUTTON = Button((200, 0, 0), 100, 450, 600, 100, "CVC")
 RGC_BUTTON = Button((60, 0, 60), 100, 575, 275, 150, "RGC OFF")
 DELAY_BUTTON = Button((gray, gray, gray), 425, 575, 275, 150, "DELAY:\n" + str(delay_time))
-BOT1_BEH = Button((100, 100, 150), 100, 750, 275, 150, "BOT 1:\n" + bot1_beh)
-BOT2_BEH = Button((100, 100, 150), 425, 750, 275, 150, "BOT 2:\n" + bot2_beh)
+BOT1_BUTTON = Button((100, 100, 150), 100, 750, 275, 150, "BOT 1:\n" + bot1_beh)
+BOT2_BUTTON = Button((100, 100, 150), 425, 750, 275, 150, "BOT 2:\n" + bot2_beh)
 
 # MAIN_MENU
 def main_menu():
@@ -477,8 +493,8 @@ def main_menu():
                 or CVC_BUTTON.is_over(mouse_pos)
                 or RGC_BUTTON.is_over(mouse_pos)
                 or DELAY_BUTTON.is_over(mouse_pos)
-                or BOT1_BEH.is_over(mouse_pos)
-                or BOT2_BEH.is_over(mouse_pos)
+                or BOT1_BUTTON.is_over(mouse_pos)
+                or BOT2_BUTTON.is_over(mouse_pos)
             ): pg.mouse.set_cursor(pg.SYSTEM_CURSOR_HAND)
             else: pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
 
@@ -523,10 +539,10 @@ def main_menu():
                         delay_time = (delay_time + 50) % 550
                         gray = delay_time // 25 + 30
 
-                    elif BOT1_BEH.is_over(mouse_pos):
+                    elif BOT1_BUTTON.is_over(mouse_pos):
                         bbid1 = (bbid1 + 1) % len(types_of_game)
                         bot1_beh = types_of_game[bbid1]
-                    elif BOT2_BEH.is_over(mouse_pos):
+                    elif BOT2_BUTTON.is_over(mouse_pos):
                         bbid2 = (bbid2 + 1) % len(types_of_game)
                         bot2_beh = types_of_game[bbid2]
 
@@ -551,8 +567,8 @@ def main_menu():
             else:
                 SET_DEFAULT_COLORS()
 
-            BOT1_BEH.text = "BOT 1:\n" + bot1_beh
-            BOT2_BEH.text = "BOT 2:\n" + bot2_beh
+            BOT1_BUTTON.text = "BOT 1:\n" + bot1_beh
+            BOT2_BUTTON.text = "BOT 2:\n" + bot2_beh
             DELAY_BUTTON.color = (gray, gray, gray)
             DELAY_BUTTON.text = "DELAY:\n" + str(delay_time)
 
