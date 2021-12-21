@@ -99,10 +99,11 @@ class Board:
             xcord = moves[0][i][0] * 100 + 1
             ycord = moves[0][i][1] * 100 + 1
 
-            pg.draw.rect(screen_surf, (0, 160, 0), pg.Rect((xcord, ycord, 98, 98)))
-            eat_num = font_medium.render(str(moves[1][i]), True, (0, 0, 0))
-            eat_num_rect = eat_num.get_rect(center=(xcord + 48, ycord + 50))
-            screen_surf.blit(eat_num, eat_num_rect)
+            if (pvp or (pvc and self.player)) and hints_on:
+                pg.draw.rect(screen_surf, (0, 160, 0), pg.Rect((xcord, ycord, 98, 98)))
+                eat_num = font_medium.render(str(moves[1][i]), True, (0, 0, 0))
+                eat_num_rect = eat_num.get_rect(center=(xcord + 48, ycord + 50))
+                screen_surf.blit(eat_num, eat_num_rect)
 
     def insert(self, x, y):
         global blk_score_text, wht_score_text, wht_score, blk_score
@@ -174,8 +175,29 @@ class Board:
         if RGC_MOD: SET_RGC()
 
     def computer_turn(self, tog):
-        t = self.choose_tog_turn(tog)
+        t = self.choose_tog(tog)
         self.turn(t[0], t[1])
+
+    def choose_tog(self, tog):
+        steps = self.moves()
+        steps_count = steps[1]
+        poss_steps = steps[0]
+
+        if tog == types_of_game[1]:
+            maxi = randind_of_max(steps_count)
+            x = poss_steps[maxi][0]
+            y = poss_steps[maxi][1]
+
+        elif tog == types_of_game[2]:
+            t = self.compute_best_step(self.player, tog)
+            x, y = t[0], t[1]
+
+        else:
+            next_random = randrange(0, len(self.moves()[0]))
+            x = poss_steps[next_random][0]
+            y = poss_steps[next_random][1]
+
+        return (x, y)
 
     def compute_best_step(self, player, tog, depth=3):
         if depth <= 0:
@@ -209,7 +231,7 @@ class Board:
                         ybest = steps[0][i][1]
 
             elif wht_score + blk_score >= 56:
-                xbest, ybest = tboard.choose_tog_turn(types_of_game[1])
+                xbest, ybest = tboard.choose_tog(types_of_game[1])
 
             good_turns.append((xbest, ybest))
 
@@ -220,7 +242,7 @@ class Board:
         # print(good_turns)
         best_step = 0
         if good_turns == [] or good_turns == [(0, 0) for _ in range(len(good_turns))]:
-            return tboard.choose_tog_turn(types_of_game[0])
+            return tboard.choose_tog(types_of_game[0])
 
         for i, coords in enumerate(good_turns):
             t = tboard.cell_can_eat(coords[0], coords[1])
@@ -244,27 +266,6 @@ class Board:
             best_step_ind = 0
 
         return (good_turns[best_step_ind])
-
-    def choose_tog_turn(self, tog):
-        steps = self.moves()
-        steps_count = steps[1]
-        poss_steps = steps[0]
-
-        if tog == types_of_game[1]:
-            maxi = randind_of_max(steps_count)
-            x = poss_steps[maxi][0]
-            y = poss_steps[maxi][1]
-
-        elif tog == types_of_game[2]:
-            t = self.compute_best_step(self.player, tog)
-            x, y = t[0], t[1]
-
-        else:
-            next_random = randrange(0, len(self.moves()[0]))
-            x = poss_steps[next_random][0]
-            y = poss_steps[next_random][1]
-
-        return (x, y)
 
     def blit(self):
         global wrong_tile_text
@@ -340,11 +341,13 @@ def draw_main_buttons():
     PVP_BUTTON.draw((20, 20, 20))
     PVC_BUTTON.draw((20, 20, 20))
     CVC_BUTTON.draw((20, 20, 20))
-    BOT1_BUTTON.draw((20, 20, 20))
-    BOT2_BUTTON.draw((20, 20, 20))
 
     RGC_BUTTON.draw((20, 20, 20))
     DELAY_BUTTON.draw((20, 20, 20))
+
+    BOT1_BUTTON.draw((20, 20, 20))
+    BOT2_BUTTON.draw((20, 20, 20))
+    HINTS_BUTTON.draw((20, 20, 20))
 
     SCREEN.blit(screen_surf, (0, 0))
     choice_text.blit()
@@ -405,7 +408,7 @@ RISK_FACTOR = 0.5
 
 # MAIN_INFO
 MAIN_BOARD = Board.new(self=Board([[0 for _ in range(9)] for _ in range(9)], True))
-types_of_game = ["RANDOM", "HIGH SCORE", "SMART"]
+types_of_game = ["EASY", "MEDIUM", "HARD"]
 
 # PARAMETERS
 current_path = os.path.dirname(__file__)
@@ -444,6 +447,7 @@ game = False
 pvp = False
 cvc = False
 pvc = False
+hints_on = True
 game_over = False
 gray = 40
 wrong_tile_bool = False
@@ -470,14 +474,15 @@ player_2_text = OnScreenText(str(checkers[1]) + " WIN", font_huge, (400, 550))
 PVP_BUTTON = Button((0, 150, 0), 100, 200, 600, 100, "PVP")
 PVC_BUTTON = Button((255, 211, 0), 100, 325, 600, 100, "PVC")
 CVC_BUTTON = Button((200, 0, 0), 100, 450, 600, 100, "CVC")
-RGC_BUTTON = Button((60, 0, 60), 100, 575, 275, 150, "RGC OFF")
-DELAY_BUTTON = Button((gray, gray, gray), 425, 575, 275, 150, "DELAY:\n" + str(delay_time))
-BOT1_BUTTON = Button((100, 100, 150), 100, 750, 275, 150, "BOT 1:\n" + bot1_beh)
-BOT2_BUTTON = Button((100, 100, 150), 425, 750, 275, 150, "BOT 2:\n" + bot2_beh)
+RGC_BUTTON = Button((60, 0, 60), 100, 575, 275, 120, "RGC: OFF")
+DELAY_BUTTON = Button((gray, gray, gray), 425, 575, 275, 120, "DELAY: " + str(delay_time))
+BOT1_BUTTON = Button((100, 100, 150), 100, 720, 275, 120, "BOT 1:\n" + bot1_beh)
+BOT2_BUTTON = Button((100, 100, 150), 425, 720, 275, 120, "BOT 2:\n" + bot2_beh)
+HINTS_BUTTON = Button((0, 150, 0), 100, 870, 600, 105, "HINTS: ON")
 
 # MAIN_MENU
 def main_menu():
-    global pvp, cvc, pvc, RGC_MOD, gray, game, delay_time, checkers, bot1_beh, bot2_beh
+    global pvp, cvc, pvc, RGC_MOD, gray, game, delay_time, checkers, bot1_beh, bot2_beh, hints_on
     bbid1, bbid2 = 1, 2
     game = False
     while not game:
@@ -495,6 +500,7 @@ def main_menu():
                 or DELAY_BUTTON.is_over(mouse_pos)
                 or BOT1_BUTTON.is_over(mouse_pos)
                 or BOT2_BUTTON.is_over(mouse_pos)
+                or HINTS_BUTTON.is_over(mouse_pos)
             ): pg.mouse.set_cursor(pg.SYSTEM_CURSOR_HAND)
             else: pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
 
@@ -528,11 +534,11 @@ def main_menu():
 
                     elif RGC_BUTTON.is_over(mouse_pos):
                         if RGC_MOD:
+                            RGC_BUTTON.text = "RGC: OFF"
                             RGC_BUTTON.color = (60, 0, 60)
-                            RGC_BUTTON.text = "RGC OFF"
                         else:
+                            RGC_BUTTON.text = "RGC: ON"
                             RGC_BUTTON.color = (230, 0, 153)
-                            RGC_BUTTON.text = "RGC ON"
                         RGC_MOD = not RGC_MOD
 
                     elif DELAY_BUTTON.is_over(mouse_pos):
@@ -546,14 +552,14 @@ def main_menu():
                         bbid2 = (bbid2 + 1) % len(types_of_game)
                         bot2_beh = types_of_game[bbid2]
 
-                elif RGC_BUTTON.is_over(mouse_pos):
-                    if RGC_MOD:
-                        RGC_BUTTON.color = (60, 0, 60)
-                        RGC_BUTTON.text = "RGC OFF"
-                    else:
-                        RGC_BUTTON.color = (230, 0, 153)
-                        RGC_BUTTON.text = "RGC ON"
-                    RGC_MOD = not RGC_MOD
+                    elif HINTS_BUTTON.is_over(mouse_pos):
+                        hints_on = not hints_on
+                        if hints_on:
+                            HINTS_BUTTON.text = "HINTS: ON"
+                            HINTS_BUTTON.color = (0, 150, 0)
+                        else:
+                            HINTS_BUTTON.text = "HINTS: OFF"
+                            HINTS_BUTTON.color = (0, 100, 0)
 
                 elif event.button == 3 or event.button == 5:
                     if DELAY_BUTTON.is_over(mouse_pos):
@@ -570,7 +576,7 @@ def main_menu():
             BOT1_BUTTON.text = "BOT 1:\n" + bot1_beh
             BOT2_BUTTON.text = "BOT 2:\n" + bot2_beh
             DELAY_BUTTON.color = (gray, gray, gray)
-            DELAY_BUTTON.text = "DELAY:\n" + str(delay_time)
+            DELAY_BUTTON.text = "DELAY: " + str(delay_time)
 
             screen_surf.fill(MAINBG)
             draw_main_buttons()
@@ -591,10 +597,12 @@ while game:
         xc, yc = pg.mouse.get_pos()[0] // 100, pg.mouse.get_pos()[1] // 100
         acc_tiles = MAIN_BOARD.moves()[0]
 
-        if (xc, yc) in acc_tiles or (xc == 2 and 810 < pg.mouse.get_pos()[1] < 910):
-            pg.mouse.set_cursor(pg.SYSTEM_CURSOR_HAND)
-        else:
-            pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
+        if pvp or (pvc and MAIN_BOARD.player):
+            if (xc, yc) in acc_tiles or (xc == 2 and 810 < pg.mouse.get_pos()[1] < 910):
+                pg.mouse.set_cursor(pg.SYSTEM_CURSOR_HAND)
+            else:
+                pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
+        else: pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
 
         if event.type == pg.MOUSEBUTTONDOWN:
             if xc == 2 and 810 < event.pos[1] < 910:
