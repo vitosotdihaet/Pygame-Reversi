@@ -597,12 +597,14 @@ while game:
         xc, yc = pg.mouse.get_pos()[0] // 100, pg.mouse.get_pos()[1] // 100
         acc_tiles = MAIN_BOARD.moves()[0]
 
-        if pvp or (pvc and MAIN_BOARD.player):
-            if (xc, yc) in acc_tiles or (xc == 2 and 810 < pg.mouse.get_pos()[1] < 910):
-                pg.mouse.set_cursor(pg.SYSTEM_CURSOR_HAND)
-            else:
-                pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
-        else: pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
+        if (
+            (xc, yc) in acc_tiles and hints_on
+            and (pvp or (pvc and MAIN_BOARD.player))
+            or (xc == 2 and 810 < pg.mouse.get_pos()[1] < 910)
+        ):
+            pg.mouse.set_cursor(pg.SYSTEM_CURSOR_HAND)
+        else:
+            pg.mouse.set_cursor(pg.SYSTEM_CURSOR_ARROW)
 
         if event.type == pg.MOUSEBUTTONDOWN:
             if xc == 2 and 810 < event.pos[1] < 910:
@@ -627,8 +629,10 @@ while game:
     if cvc and not game_over:
         MAIN_BOARD.blit()
         pg.display.update()
-        if MAIN_BOARD.player: MAIN_BOARD.computer_turn(bot1_beh)
-        else: MAIN_BOARD.computer_turn(bot2_beh)
+        if MAIN_BOARD.player: 
+            MAIN_BOARD.computer_turn(bot1_beh)
+        else: 
+            MAIN_BOARD.computer_turn(bot2_beh)
         pg.time.delay(delay_time)
 
     # WINNIG_TEXT
