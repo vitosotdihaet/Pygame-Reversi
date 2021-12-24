@@ -191,7 +191,6 @@ class Board:
         elif tog == types_of_game[2]:
             t = self.compute_best_step(self.player, tog)
             x, y = t[0], t[1]
-            print(x, y)
 
         else:
             next_random = randrange(0, len(self.moves()[0]))
@@ -237,7 +236,7 @@ class Board:
             ngrid[r][c] = ogrid[r][c]
         tboard = Board(ngrid, player)
 
-        print(good_turns)
+        # print(good_turns)
         best_step = 0
         if (
             good_turns == []
@@ -632,10 +631,8 @@ while game:
         MAIN_BOARD.blit()
         pg.display.update()
         if MAIN_BOARD.player:
-            MAIN_BOARD.print('hod chenich')
             MAIN_BOARD.computer_turn(bot1_beh)
         else:
-            MAIN_BOARD.print('hod belich')
             MAIN_BOARD.computer_turn(bot2_beh)
         pg.time.delay(delay_time)
 
