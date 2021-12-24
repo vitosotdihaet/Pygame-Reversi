@@ -163,7 +163,7 @@ class Board:
     def turn(self, x, y):
         global wrong_tile_bool
         to_eat = self.cell_can_eat(x, y)
-        if len(to_eat) == 0:
+        if len(to_eat) == 0 or self.grid[y][x] != 0:
             wrong_tile_bool = True
             return
         wrong_tile_bool = False
@@ -191,6 +191,7 @@ class Board:
         elif tog == types_of_game[2]:
             t = self.compute_best_step(self.player, tog)
             x, y = t[0], t[1]
+            print(x, y)
 
         else:
             next_random = randrange(0, len(self.moves()[0]))
@@ -199,10 +200,7 @@ class Board:
 
         return (x, y)
 
-    def compute_best_step(self, player, tog, depth=3):
-        if depth <= 0:
-            return (-1, -1)
-
+    def compute_best_step(self, player, tog):
         ogrid = self.grid
         ngrid = [[0 for _ in range(9)] for _ in range(9)]
         good_turns = []
@@ -239,9 +237,13 @@ class Board:
             ngrid[r][c] = ogrid[r][c]
         tboard = Board(ngrid, player)
 
-        # print(good_turns)
+        print(good_turns)
         best_step = 0
-        if good_turns == [] or good_turns == [(0, 0) for _ in range(len(good_turns))]:
+        if (
+            good_turns == []
+            or good_turns == [(0, 0) for _ in range(len(good_turns))]
+            or good_turns == [(-1, -1) for _ in range(len(good_turns))]
+            ):
             return tboard.choose_tog(types_of_game[0])
 
         for i, coords in enumerate(good_turns):
@@ -629,9 +631,11 @@ while game:
     if cvc and not game_over:
         MAIN_BOARD.blit()
         pg.display.update()
-        if MAIN_BOARD.player: 
+        if MAIN_BOARD.player:
+            MAIN_BOARD.print('hod chenich')
             MAIN_BOARD.computer_turn(bot1_beh)
-        else: 
+        else:
+            MAIN_BOARD.print('hod belich')
             MAIN_BOARD.computer_turn(bot2_beh)
         pg.time.delay(delay_time)
 
